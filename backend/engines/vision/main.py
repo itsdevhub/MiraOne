@@ -1,39 +1,32 @@
-from pathlib import Path
+import time
 
 import cv2
+import pyautogui
 import mediapipe as mp
 
+from .asset_factory import asset_factory
+from .one_euro_filter import one_euro_filter
+from .utils import landmark_distance
 
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-# GestureRecognizer = mp.tasks.vision.GestureRecognizer
-# GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-VisionRunningMode = mp.tasks.vision.RunningMode
-DrawingUtils = mp.tasks.vision.drawing_utils
-DrawingStyles = mp.tasks.vision.drawing_styles
-HandLandmarksConnections = mp.tasks.vision.HandLandmarksConnections
-
-# Create hand landmarker
-BASE_DIR = Path(__file__).resolve().parent
-hand_landmarker_path = str(BASE_DIR / 'model_assets' / 'hand_landmarker.task')
-options = HandLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=hand_landmarker_path),
-    running_mode=VisionRunningMode.VIDEO
-)
-
-# options = GestureRecognizerOptions(
-#     # base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
-#     base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
-#     running_mode=VisionRunningMode.VIDEO
-# )
 
 def run_vision(frame_queue):
-    cap = cv2.VideoCapture(0)
+    DEAD_ZONE = 5
+    CLICK_THRESHOLD = 0.04
+    screen_w, screen_h = pyautogui.size()
+    filter_x = one_euro_filter(min_cutoff=1.0, beta=0.01)
+    filter_y = one_euro_filter(min_cutoff=1.0, beta=0.01)
+    clicking = False
 
-    with HandLandmarker.create_from_options(options) as landmarker:
-        while cap.isOpened():
-            ret, frame = cap.read()
+    hand_options = mp.tasks.vision.HandLandmarkerOptions(
+        base_options=mp.tasks.BaseOptions(model_asset_path=str(asset_factory.hand_landmarker())),
+        running_mode=mp.tasks.vision.RunningMode.VIDEO,
+        num_hands=1
+    )
+    capture = cv2.VideoCapture(0)
+
+    with mp.tasks.vision.HandLandmarker.create_from_options(hand_options) as landmarker:
+        while capture.isOpened():
+            ret, frame = capture.read()
             if not ret:
                 break
 
@@ -48,23 +41,55 @@ def run_vision(frame_queue):
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
-            result = landmarker.detect_for_video(mp_image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+            result = landmarker.detect_for_video(mp_image, int(capture.get(cv2.CAP_PROP_POS_MSEC)))
 
             # Draw landmarks on the BGR frame we display.
             if result.hand_landmarks:
                 for hand_landmarks in result.hand_landmarks:
-                    DrawingUtils.draw_landmarks(
+                    mp.tasks.vision.drawing_utils.draw_landmarks(
                         frame,
                         hand_landmarks,
-                        HandLandmarksConnections.HAND_CONNECTIONS,
-                        DrawingStyles.get_default_hand_landmarks_style(),
-                        DrawingStyles.get_default_hand_connections_style(),
+                        mp.tasks.vision.HandLandmarksConnections.HAND_CONNECTIONS,
+                        mp.tasks.vision.drawing_styles.get_default_hand_landmarks_style(),
+                        mp.tasks.vision.drawing_styles.get_default_hand_connections_style(),
                     )
+                
+                hand = result.hand_landmarks[0]  # first hand only
+                index_tip = hand[8]
+                thumb_tip = hand[4]             
+                middle_tip = hand[12]
+
+                # convert to screen space
+                target_x = int(index_tip.x * screen_w)
+                target_y = int(index_tip.y * screen_h)
+
+                # --- ONE EURO FILTER ---
+                cur_time = time.time()
+                smooth_x = int(filter_x.filter(target_x, cur_time))
+                smooth_y = int(filter_y.filter(target_y, cur_time))
+
+                # --- DEAD ZONE (optional) ---
+                dx = smooth_x - pyautogui.position().x
+                dy = smooth_y - pyautogui.position().y
+
+                if abs(dx) > DEAD_ZONE or abs(dy) > DEAD_ZONE:
+                    # index finger is up → move mouse
+                    if index_tip.y < middle_tip.y:
+                        pyautogui.moveTo(smooth_x, smooth_y)
+
+                # --- CLICKING ---
+                pinching = landmark_distance(thumb_tip, index_tip) < CLICK_THRESHOLD
+                index_up = index_tip.y < middle_tip.y
+
+                if pinching and index_up and not clicking:
+                    pyautogui.click()
+
+                clicking = pinching
 
             cv2.imshow('Hand Tracking', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-    cap.release()
+    capture.release()
     cv2.destroyAllWindows()
