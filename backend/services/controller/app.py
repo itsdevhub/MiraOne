@@ -9,19 +9,11 @@ engine_manager = engine_manager()
 
 @app.post('/controller/start')
 def start_controller():
-    ret = engine_manager.start()
-    if ret:
-        return {'status': 'starting controller'}
-    else:
-        return {'status': 'controller already running'}
+    return engine_manager.start()
 
 @app.post('/controller/stop')
 def stop_controller():
-    ret = engine_manager.stop()
-    if ret:
-        return {'status': 'stopping controller'}
-    else:
-        return {'status': 'controller already stopped'}
+    return engine_manager.stop()
 
 @app.websocket('/controller/vision/frame')
 async def vision_stream(websocket: WebSocket):

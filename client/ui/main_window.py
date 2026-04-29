@@ -40,12 +40,18 @@ class main_window(QWidget):
     @asyncSlot()
     async def on_start(self):
         res = await client.api.start_controller()
-        self.label.setText(str(res))
+        if res:
+            self.label.setText(str({'status': 'starting controller'}))
+        else:
+            self.label.setText(str({'status': 'controller already running'}))
 
     @asyncSlot()
     async def on_stop(self):
         res = await client.api.stop_controller()
-        self.label.setText(str(res))    
+        if res:
+            self.label.setText(str({'status': 'stopping controller'}))
+        else:
+            self.label.setText(str({'status': 'controller already stopped'}))
 
     @asyncSlot()
     async def on_start_stream(self):
