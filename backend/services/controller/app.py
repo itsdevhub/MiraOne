@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket
 import uvicorn
+import asyncio
 
 from .engine_manager import engine_manager
 
@@ -21,9 +22,11 @@ async def vision_stream(websocket: WebSocket):
     await websocket.accept()
 
     while True:
-        if not vision_frame_queue.empty():
-            vision_frame = vision_frame_queue.get()
+        try:
+            vision_frame = vision_frame_queue.get_nowait()
             await websocket.send_bytes(vision_frame)
+        except Exception:
+            await asyncio.sleep(0.01)
 
 def run_controller():
     uvicorn.run(app, host='127.0.0.1', port=8000)
