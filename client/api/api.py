@@ -17,6 +17,11 @@ async def stop_controller():
         res = await client.post(f'{API_URL}/controller/stop')
         return res.json()
 
+def shutdown_controller():
+    with httpx.Client() as client:
+        res = client.post(f'{API_URL}/controller/shutdown')
+        return res.json()
+
 async def vision_stream():
     uri = f'{API_WS}/controller/vision/frame'
 

@@ -2,7 +2,8 @@ from .engine_manager import engine_manager
 
 
 class controller:
-    def __init__(self):
+    def __init__(self, fast_api_app):
+        self.fast_api_app = fast_api_app
         self.engine_manager = engine_manager()
 
     def start(self):

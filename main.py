@@ -2,6 +2,7 @@ from multiprocessing import Process
 
 from backend.services.controller import run_controller
 from client.ui import run_ui
+from client.api import shutdown_controller
 
 
 if __name__ == '__main__':
@@ -11,5 +12,5 @@ if __name__ == '__main__':
     try:
         run_ui()
     finally:
-        controller_process.terminate()
+        shutdown_controller()
         controller_process.join()
