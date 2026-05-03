@@ -53,6 +53,9 @@ class main_window(QWidget):
         else:
             self.label.setText(str({'status': 'controller already stopped'}))
 
+        # Stop stream also
+        self.on_stop_stream()
+
     @asyncSlot()
     async def on_start_stream(self):
         if self._stream_task and not self._stream_task.done():
