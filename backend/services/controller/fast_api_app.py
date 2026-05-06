@@ -29,7 +29,7 @@ class fast_api_app:
         self.server.run()
     
     def shutdown(self):
-        self.controller.stop()
+        self.controller.shutdown()
         self.server.should_exit = True
 
         return True

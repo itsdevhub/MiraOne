@@ -29,7 +29,7 @@ class controller_routes:
             await websocket.accept()
             vision_frame_queue = self.controller.get_frame_queue()
 
-            while True:
+            while not self.controller.is_shutting_down():
                 try:
                     vision_frame = vision_frame_queue.get_nowait()
                     await websocket.send_bytes(vision_frame)
