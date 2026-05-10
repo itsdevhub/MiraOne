@@ -1,5 +1,5 @@
 import asyncio
-from queue import Empty as EmptyFrameException
+from queue import Empty as EmptyQueueException
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -33,7 +33,7 @@ class controller_routes:
                 try:
                     vision_frame = vision_frame_queue.get_nowait()
                     await websocket.send_bytes(vision_frame)
-                except EmptyFrameException:
+                except EmptyQueueException:
                     await asyncio.sleep(0.01)
                 except WebSocketDisconnect:
                     break
