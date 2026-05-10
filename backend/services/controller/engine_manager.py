@@ -1,6 +1,7 @@
 from multiprocessing import Process, Queue
 
 from backend.engines.vision import run_vision
+from backend.engines.os_action import run_os_action
 
 
 class base_engine:
@@ -30,23 +31,22 @@ class base_engine:
         return self.process and self.process.is_alive()
 
 class vision_engine(base_engine):
-    def __init__(self):
+    def __init__(self, actions_queue):
         self.frame_queue = Queue(maxsize=10)
-        super().__init__(target=run_vision, args=(self.frame_queue,))
+        super().__init__(target=run_vision, args=(self.frame_queue, actions_queue,))
 
-# class os_action_engine(base_engine):
-    # def __init__(self):
-        # super().__init(target=run_os_action)
+class os_action_engine(base_engine):
+    def __init__(self):
+        self.actions_queue = Queue(maxsize=10)
+        super().__init__(target=run_os_action, args=(self.actions_queue,))
 
 class engine_manager:
     def __init__(self):
-        self.vision_engine = vision_engine()
-        # self.os_action_engine = os_action_engine()
+        self.os_action_engine = os_action_engine()
+        self.vision_engine = vision_engine(self.os_action_engine.actions_queue)
     
     def start(self):
-        return self.vision_engine.start()
-        # self.os_action_engine.start()
+        return all(engine.start() for engine in (self.vision_engine, self.os_action_engine))
     
     def stop(self):
-        return self.vision_engine.stop()
-        # self.os_action_engine.stop()
+        return all(engine.stop() for engine in (self.vision_engine, self.os_action_engine))

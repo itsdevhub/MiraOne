@@ -13,9 +13,10 @@ class vision:
     DEAD_ZONE = 5
     CLICK_THRESHOLD = 0.04
 
-    def __init__(self, frame_queue):
+    def __init__(self, frame_queue, actions_queue):
         self.capture = cv2.VideoCapture(0)
         self.frame_queue = frame_queue
+        self.actions_queue = actions_queue
     
     def __enter__(self):
         return self
@@ -44,11 +45,6 @@ class vision:
 
                 frame = cv2.flip(frame, 1)
 
-                if not self.frame_queue.full():
-                    _, buffer = cv2.imencode('.jpg', frame)
-                    frame_bytes = buffer.tobytes()
-                    self.frame_queue.put(frame_bytes)
-
                 # MediaPipe Image expects RGB for SRGB format.
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
@@ -65,7 +61,7 @@ class vision:
                             mp.tasks.vision.drawing_styles.get_default_hand_landmarks_style(),
                             mp.tasks.vision.drawing_styles.get_default_hand_connections_style(),
                         )
-                    
+
                     hand = result.hand_landmarks[0]  # first hand only
                     index_tip = hand[8]
                     thumb_tip = hand[4]             
@@ -87,6 +83,7 @@ class vision:
                     if abs(dx) > self.DEAD_ZONE or abs(dy) > self.DEAD_ZONE:
                         # index finger is up → move mouse
                         if index_tip.y < middle_tip.y:
+                            self.actions_queue.put(f'x={smooth_x} y={smooth_y}')
                             pyautogui.moveTo(smooth_x, smooth_y)
 
                     # --- CLICKING ---
@@ -99,6 +96,15 @@ class vision:
                     clicking = pinching
 
                 cv2.imshow('Hand Tracking', frame)
+                self.put_frame(frame)
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+    
+    def put_frame(self, frame):
+        if self.frame_queue.full():
+            return
+
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        self.frame_queue.put(frame_bytes)
