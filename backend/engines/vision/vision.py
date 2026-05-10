@@ -77,15 +77,14 @@ class vision:
 
                     # index finger is up → move mouse
                     if index_tip.y < middle_tip.y:
-                        self.actions_queue.put(f'x={smooth_x} y={smooth_y}')
-                        pyautogui.moveTo(smooth_x, smooth_y)
+                        self.put_action('move', smooth_x, smooth_y)
 
                     # --- CLICKING ---
                     pinching = landmark_distance(thumb_tip, index_tip) < self.CLICK_THRESHOLD
                     index_up = index_tip.y < middle_tip.y
 
                     if pinching and index_up and not clicking:
-                        pyautogui.click()
+                        self.put_action('click', smooth_x, smooth_y)
 
                     clicking = pinching
 
@@ -102,3 +101,10 @@ class vision:
         _, buffer = cv2.imencode('.jpg', frame)
         frame_bytes = buffer.tobytes()
         self.frame_queue.put(frame_bytes)
+    
+    def put_action(self, type, x, y):
+        if self.actions_queue.full():
+            return
+
+        action = {'type': type, 'x': x, 'y': y}
+        self.actions_queue.put(action)

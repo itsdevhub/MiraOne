@@ -1,4 +1,3 @@
-import time
 import pyautogui
 
 from queue import Empty as EmptyQueueException
@@ -6,6 +5,7 @@ from queue import Empty as EmptyQueueException
 
 class os_action:
     def __init__(self, actions_queue):
+        pyautogui.PAUSE = 0
         self.actions_queue = actions_queue
     
     def __enter__(self):
@@ -18,6 +18,19 @@ class os_action:
         while True:
             try:
                 action = self.actions_queue.get_nowait()
-                print(str(action))
+                if action['type'] == 'move':
+                    self.move_to(action['x'], action['y'])
+                elif action['type'] == 'click':
+                    self.click()
             except EmptyQueueException:
-                time.sleep(0.01)
+                pass
+            except KeyError:
+                pass
+            except Exception:
+                break
+
+    def move_to(self, x, y):
+        pyautogui.moveTo(x, y)
+
+    def click(self):
+        pyautogui.click()
