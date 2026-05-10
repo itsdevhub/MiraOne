@@ -10,7 +10,6 @@ from .utils import landmark_distance
 
 
 class vision:
-    DEAD_ZONE = 5
     CLICK_THRESHOLD = 0.04
 
     def __init__(self, frame_queue, actions_queue):
@@ -76,15 +75,10 @@ class vision:
                     smooth_x = int(filter_x.filter(target_x, cur_time))
                     smooth_y = int(filter_y.filter(target_y, cur_time))
 
-                    # --- DEAD ZONE (optional) ---
-                    dx = smooth_x - pyautogui.position().x
-                    dy = smooth_y - pyautogui.position().y
-
-                    if abs(dx) > self.DEAD_ZONE or abs(dy) > self.DEAD_ZONE:
-                        # index finger is up → move mouse
-                        if index_tip.y < middle_tip.y:
-                            self.actions_queue.put(f'x={smooth_x} y={smooth_y}')
-                            pyautogui.moveTo(smooth_x, smooth_y)
+                    # index finger is up → move mouse
+                    if index_tip.y < middle_tip.y:
+                        self.actions_queue.put(f'x={smooth_x} y={smooth_y}')
+                        pyautogui.moveTo(smooth_x, smooth_y)
 
                     # --- CLICKING ---
                     pinching = landmark_distance(thumb_tip, index_tip) < self.CLICK_THRESHOLD
