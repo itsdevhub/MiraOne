@@ -1,4 +1,4 @@
-import threading
+from threading import Event
 
 from .engine_manager import engine_manager
 
@@ -7,7 +7,7 @@ class controller:
     def __init__(self, fast_api_app):
         self.fast_api_app = fast_api_app
         self.engine_manager = engine_manager()
-        self.shutdown_event = threading.Event()
+        self.shutdown_event = Event()
 
     def start(self):
         return self.engine_manager.start()
