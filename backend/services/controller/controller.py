@@ -4,8 +4,8 @@ from .engine_manager import engine_manager
 
 
 class controller:
-    def __init__(self, fast_api_app):
-        self.fast_api_app = fast_api_app
+    def __init__(self, fastapi_app):
+        self.fastapi_app = fastapi_app
         self.engine_manager = engine_manager()
         self.shutdown_event = Event()
 

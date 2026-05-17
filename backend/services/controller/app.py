@@ -1,6 +1,6 @@
-from .fast_api_app import fast_api_app
+from .fastapi_app import fastapi_app
 
 
 def run_controller():
-    with fast_api_app() as app:
+    with fastapi_app() as app:
         app.run()

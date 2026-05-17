@@ -22,7 +22,7 @@ class controller_routes:
 
         @self.router.post("/controller/shutdown")
         def shutdown_controller():
-            return self.controller.fast_api_app.shutdown()
+            return self.controller.fastapi_app.shutdown()
 
         @self.router.websocket("/controller/vision/frame")
         async def vision_stream(websocket: WebSocket):

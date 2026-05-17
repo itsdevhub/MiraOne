@@ -5,7 +5,7 @@ from .controller import controller
 from .controller_routes import controller_routes
 
 
-class fast_api_app:
+class fastapi_app:
     HOST = '127.0.0.1'
     PORT = 3000
 
