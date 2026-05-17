@@ -7,7 +7,7 @@ from .controller_routes import controller_routes
 
 class fast_api_app:
     HOST = '127.0.0.1'
-    PORT = 8000
+    PORT = 3000
 
     def __init__(self):
         self.app = FastAPI()
